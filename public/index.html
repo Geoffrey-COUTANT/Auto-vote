@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b1020" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Vote Loop" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>Vote Loop PWA</title>
+  </head>
+  <body>
+    <div class="noise"></div>
+    <main class="app">
+      <section class="hero">
+        <p class="eyebrow">AUTOMATISATION GTA RP</p>
+        <h1>Vote Loop</h1>
+        <p class="subtitle">Timer intelligent + rappel automatique + boucle controlable</p>
+      </section>
+
+      <section class="glass panel">
+        <label for="voteUrl">URL de vote</label>
+        <input id="voteUrl" type="url" placeholder="https://..." />
+
+        <label for="cooldown">Cooldown (minutes)</label>
+        <input id="cooldown" type="number" min="1" value="120" />
+
+        <label for="timerRegex">Regex du timer (groupe 1)</label>
+        <input id="timerRegex" type="text" value="(\\d{1,2}:\\d{2}:\\d{2})" />
+
+        <div class="actions">
+          <button id="saveBtn" class="btn">Sauvegarder</button>
+          <button id="openBtn" class="btn accent">Ouvrir la page de vote</button>
+          <button id="syncBtn" class="btn">Sync timer depuis URL</button>
+        </div>
+      </section>
+
+      <section class="glass panel timer-wrap">
+        <p class="timer-label">Prochain vote dans</p>
+        <p id="timer" class="timer">--:--:--</p>
+        <div class="actions">
+          <button id="startBtn" class="btn good">Start</button>
+          <button id="stopBtn" class="btn danger">Stop</button>
+          <button id="votedBtn" class="btn">J'ai vote</button>
+        </div>
+      </section>
+
+      <section class="glass panel">
+        <h2>Historique</h2>
+        <ul id="history" class="history"></ul>
+      </section>
+    </main>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,155 @@
+:root {
+  color-scheme: dark;
+  --bg: #060913;
+  --bg2: #0f1730;
+  --text: #eef3ff;
+  --muted: #a7b5d3;
+  --accent: #8f7dff;
+  --accent2: #32d9ff;
+  --good: #36d98a;
+  --danger: #ff5f8d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(1000px 600px at 15% -10%, #24386b 0%, transparent 60%),
+    radial-gradient(800px 500px at 90% 10%, #4b1c60 0%, transparent 55%), var(--bg);
+  color: var(--text);
+}
+
+.noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  background-image: radial-gradient(#ffffff22 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+
+.app {
+  position: relative;
+  width: min(760px, 92vw);
+  margin: 32px auto 56px;
+}
+
+.hero h1 {
+  margin: 8px 0;
+  font-size: clamp(2rem, 9vw, 3.8rem);
+  letter-spacing: 0.02em;
+}
+
+.eyebrow {
+  color: var(--accent2);
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--muted);
+}
+
+.glass {
+  backdrop-filter: blur(12px);
+  background: linear-gradient(160deg, #ffffff1a, #ffffff08);
+  border: 1px solid #ffffff2a;
+  box-shadow: 0 12px 40px #00000055;
+  border-radius: 20px;
+}
+
+.panel {
+  margin-top: 18px;
+  padding: 18px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+input {
+  width: 100%;
+  border: 1px solid #ffffff35;
+  background: #0a1228aa;
+  color: var(--text);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.btn {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: white;
+  background: linear-gradient(120deg, #344266, #202944);
+  cursor: pointer;
+}
+
+.btn.accent {
+  background: linear-gradient(120deg, var(--accent), var(--accent2));
+  color: #051022;
+  font-weight: 700;
+}
+
+.btn.good {
+  background: linear-gradient(120deg, #2d6f54, var(--good));
+  color: #06170f;
+  font-weight: 700;
+}
+
+.btn.danger {
+  background: linear-gradient(120deg, #6b2742, var(--danger));
+}
+
+.timer-wrap {
+  text-align: center;
+}
+
+.timer-label {
+  margin: 0;
+  color: var(--muted);
+}
+
+.timer {
+  margin: 6px 0 14px;
+  font-size: clamp(2rem, 10vw, 4rem);
+  font-weight: 800;
+  color: #e7f0ff;
+}
+
+h2 {
+  margin: 0 0 10px;
+}
+
+.history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.history li {
+  font-size: 0.9rem;
+  color: #c5d3f5;
+  background: #0a122b88;
+  border: 1px solid #ffffff1f;
+  border-radius: 10px;
+  padding: 10px;
+}

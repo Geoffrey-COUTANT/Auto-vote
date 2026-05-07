@@ -1,0 +1,17 @@
+{
+  "name": "Vote Loop PWA",
+  "short_name": "VoteLoop",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#060913",
+  "theme_color": "#0b1020",
+  "description": "Timer de vote GTA RP avec rappels automatiques.",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

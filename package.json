@@ -1,0 +1,25 @@
+{
+  "name": "soutenir-un-serveur-gta-rp",
+  "version": "1.0.0",
+  "description": "Comme tu peux voir le nom du dossier je veux pouvoir faire une PWA adapter IOS qui permet de faire un timer et à la fin du timer une automatisation qui permet de pouvoir m'ouvrir une url qui va sur l'adresse et quand j'ai cliquer sur le bouton \"Voter\" ça me remet un timer qui est récupérer sur l'url directement et à la fin du timer ça me refait l'automatisation d'ouvrir l'url et ça tourne en boucle comme ça ! faut que même si le PWA et fermé faut que ça fasse l'automatisation ! faut pourvoir aussi avoir un bouton pour arrêter l'automatisation si j'en ai marre et pouvoir la relancer comme je le souhaite. La première fois que j'ouvre le PWA ça me va directement sur l'url je remplie les information et ça me récupère le timer et me met un timer sur l'PWA. Si tu as des questions hésite pas à me les poser avant de commencer",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "vite",
+    "server": "node server/index.js",
+    "start": "node server/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "node-cron": "^4.2.1"
+  },
+  "devDependencies": {
+    "vite": "^8.0.11"
+  }
+}
