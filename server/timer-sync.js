@@ -1,5 +1,17 @@
 const { setState, getState, addHistory } = require("./db");
 
+/** Utilise si la base a encore une URL vide (ex. deploy sans « Sauvegarder »). */
+const DEFAULT_VOTE_URL = "https://top-serveurs.net/gta/vote/dreamvrp";
+
+function votePageFetchHeaders() {
+  return {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+  };
+}
+
 function parseHmsToMs(value) {
   const parts = value.split(":").map(Number);
   if (parts.some((n) => Number.isNaN(n))) return null;
@@ -50,16 +62,21 @@ function extractTimerFromDataUnits(html) {
 async function syncTimerFromVotePage(options = {}) {
   const { skipHistory = false } = options;
   const state = await getState();
-  if (!state.vote_url) throw new Error("Aucune URL de vote configuree.");
+  const trimmedUrl = String(state.vote_url || "").trim();
+  const voteUrl = trimmedUrl || DEFAULT_VOTE_URL;
 
-  const response = await fetch(state.vote_url);
-  if (!response.ok) throw new Error(`Page inaccessible (${response.status}).`);
+  const response = await fetch(voteUrl, { headers: votePageFetchHeaders(), redirect: "follow" });
+  if (!response.ok) {
+    throw new Error(`Page inaccessible (${response.status}). Verifie l'URL de vote ou reessaie.`);
+  }
   const html = await response.text();
 
   const unitTimer = extractTimerFromDataUnits(html);
   if (unitTimer) {
     const nextVoteAt = Date.now() + unitTimer.ms;
-    const updated = await setState({ next_vote_at: nextVoteAt });
+    const patch = { next_vote_at: nextVoteAt };
+    if (!trimmedUrl) patch.vote_url = DEFAULT_VOTE_URL;
+    const updated = await setState(patch);
     if (!skipHistory) {
       await addHistory(
         "sync",
@@ -69,17 +86,31 @@ async function syncTimerFromVotePage(options = {}) {
     return { state: updated, matchedTimer: unitTimer.label };
   }
 
-  const regex = new RegExp(state.timer_regex || "(\\d{1,2}:\\d{2}:\\d{2})");
+  let regex;
+  try {
+    regex = new RegExp(state.timer_regex || "(\\d{1,2}:\\d{2}:\\d{2})");
+  } catch {
+    throw new Error(
+      "Regex timer invalide en base (timer_regex). Repare-la via POST /api/state ou reinitialise la ligne app_state."
+    );
+  }
   const match = html.match(regex);
   if (!match || !match[1]) {
-    throw new Error("Timer introuvable sur la page avec la regex actuelle.");
+    const hasBlock = /digitalCountdown/i.test(html);
+    throw new Error(
+      hasBlock
+        ? "Compteur #digitalCountdown present mais valeurs illisibles (HTML change?). Contact / mise a jour du parser."
+        : "Timer introuvable : la page renvoyee ne contient pas #digitalCountdown (anti-bot, blocage IP hebergeur, ou HTML different). Essaie depuis ton PC ou clique « Sauvegarder » avec la bonne URL."
+    );
   }
 
   const ms = parseHmsToMs(match[1]);
   if (!ms) throw new Error("Format de timer invalide.");
 
   const nextVoteAt = Date.now() + ms;
-  const updated = await setState({ next_vote_at: nextVoteAt });
+  const patch = { next_vote_at: nextVoteAt };
+  if (!trimmedUrl) patch.vote_url = DEFAULT_VOTE_URL;
+  const updated = await setState(patch);
   if (!skipHistory) {
     await addHistory("sync", `Timer synchronise depuis l'URL: ${match[1]}.`);
   }
@@ -89,4 +120,5 @@ async function syncTimerFromVotePage(options = {}) {
 module.exports = {
   syncTimerFromVotePage,
   extractTimerFromDataUnits,
+  DEFAULT_VOTE_URL,
 };
