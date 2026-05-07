@@ -12,13 +12,47 @@ function parseHmsToMs(value) {
   return null;
 }
 
+function extractTimerFromDataUnits(html) {
+  const getUnit = (unit) => {
+    const regex = new RegExp(
+      `<span[^>]*data-unit=["']${unit}["'][^>]*>\\s*(\\d{1,2})\\s*<\\/span>`,
+      "i"
+    );
+    const match = html.match(regex);
+    return match ? Number(match[1]) : null;
+  };
+
+  const hours = getUnit("hours");
+  const minutes = getUnit("minutes");
+  const seconds = getUnit("seconds");
+
+  if (hours === null || minutes === null || seconds === null) {
+    return null;
+  }
+
+  const ms = ((hours * 60 + minutes) * 60 + seconds) * 1000;
+  const label = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(
+    seconds
+  ).padStart(2, "0")}`;
+
+  return { ms, label };
+}
+
 async function syncTimerFromVotePage() {
-  const state = getState();
+  const state = await getState();
   if (!state.vote_url) throw new Error("Aucune URL de vote configuree.");
 
   const response = await fetch(state.vote_url);
   if (!response.ok) throw new Error(`Page inaccessible (${response.status}).`);
   const html = await response.text();
+
+  const unitTimer = extractTimerFromDataUnits(html);
+  if (unitTimer) {
+    const nextVoteAt = Date.now() + unitTimer.ms;
+    const updated = await setState({ next_vote_at: nextVoteAt });
+    await addHistory("sync", `Timer synchronise depuis l'URL: ${unitTimer.label}.`);
+    return { state: updated, matchedTimer: unitTimer.label };
+  }
 
   const regex = new RegExp(state.timer_regex || "(\\d{1,2}:\\d{2}:\\d{2})");
   const match = html.match(regex);
@@ -30,8 +64,8 @@ async function syncTimerFromVotePage() {
   if (!ms) throw new Error("Format de timer invalide.");
 
   const nextVoteAt = Date.now() + ms;
-  const updated = setState({ next_vote_at: nextVoteAt });
-  addHistory("sync", `Timer synchronise depuis l'URL: ${match[1]}.`);
+  const updated = await setState({ next_vote_at: nextVoteAt });
+  await addHistory("sync", `Timer synchronise depuis l'URL: ${match[1]}.`);
   return { state: updated, matchedTimer: match[1] };
 }
 

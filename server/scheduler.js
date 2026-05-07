@@ -9,7 +9,7 @@ function computeNextVoteFromNow(minutes) {
 }
 
 async function tick() {
-  const state = getState();
+  const state = await getState();
   if (!state.is_running || !state.next_vote_at || !state.vote_url) {
     notificationSentFor = null;
     return;
@@ -26,25 +26,27 @@ async function tick() {
 
   try {
     await notifyVoteReady(state.vote_url);
-    addHistory("notify", `Rappel envoyé pour voter: ${state.vote_url}`);
+    await addHistory("notify", `Rappel envoye pour voter: ${state.vote_url}`);
   } catch (error) {
-    addHistory("error", `Echec notification: ${error.message}`);
+    await addHistory("error", `Echec notification: ${error.message}`);
   } finally {
     notificationSentFor = state.next_vote_at;
   }
 }
 
 function startScheduler() {
-  cron.schedule("* * * * *", tick);
+  cron.schedule("* * * * *", () => {
+    tick().catch(() => {});
+  });
 }
 
-function markVoteDone() {
-  const state = getState();
+async function markVoteDone() {
+  const state = await getState();
   const nextVoteAt = computeNextVoteFromNow(state.vote_cooldown_minutes);
-  const updated = setState({ next_vote_at: nextVoteAt });
-  addHistory(
+  const updated = await setState({ next_vote_at: nextVoteAt });
+  await addHistory(
     "vote",
-    `Vote confirmé. Prochain timer dans ${updated.vote_cooldown_minutes} minutes.`
+    `Vote confirme. Prochain timer dans ${updated.vote_cooldown_minutes} minutes.`
   );
   return updated;
 }

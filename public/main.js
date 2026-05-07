@@ -27,7 +27,16 @@ async function api(path, options = {}) {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
-  if (!res.ok) throw new Error(`API ${path} en erreur`);
+  if (!res.ok) {
+    let message = `API ${path} en erreur`;
+    try {
+      const data = await res.json();
+      if (data?.error) message = data.error;
+    } catch (_error) {
+      // Ignore JSON parse errors and keep default message.
+    }
+    throw new Error(message);
+  }
   return res.json();
 }
 

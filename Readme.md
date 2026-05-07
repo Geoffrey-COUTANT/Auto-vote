@@ -1,6 +1,6 @@
 # Vote Loop - PWA + Backend
 
-Application PWA iOS + backend Node.js pour gerer un cycle de vote en boucle:
+Application PWA iOS + backend Node.js pour gerer un cycle de vote en boucle avec PostgreSQL:
 
 - Timer visible dans la PWA
 - Start/Stop de l'automatisation
@@ -10,6 +10,7 @@ Application PWA iOS + backend Node.js pour gerer un cycle de vote en boucle:
 - Historique des actions
 - Notifications Discord/Telegram quand le timer arrive a 0
 - Fonctionne meme si la PWA est fermee (car le scheduler tourne sur le serveur)
+- Stockage persistant PostgreSQL (stable pour la production)
 
 ## Installation
 
@@ -18,7 +19,12 @@ npm install
 cp .env.example .env
 ```
 
-Puis configure `.env` si tu veux des notifications:
+Puis configure `.env`:
+
+- `DATABASE_URL` (obligatoire)
+- `PGSSL` (`false` en local, `true` sur Render/Railway)
+
+Puis ajoute si tu veux des notifications:
 
 - `DISCORD_WEBHOOK_URL`
 - `TELEGRAM_BOT_TOKEN`
@@ -33,6 +39,14 @@ npm start
 Ouvre ensuite:
 
 [http://localhost:3000](http://localhost:3000)
+
+## PostgreSQL sur Render (recommande)
+
+1. Cree une base PostgreSQL Render
+2. Copie `External Database URL`
+3. Colle cette valeur dans la variable d'environnement `DATABASE_URL` de ton service web
+4. Mets `PGSSL=true`
+5. Redeploie le service
 
 ## Utilisation
 
