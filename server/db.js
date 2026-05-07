@@ -19,7 +19,7 @@ async function initDb() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS app_state (
       id INTEGER PRIMARY KEY CHECK (id = 1),
-      vote_url TEXT NOT NULL DEFAULT '',
+      vote_url TEXT NOT NULL DEFAULT 'https://top-serveurs.net/gta/vote/dreamvrp',
       is_running INTEGER NOT NULL DEFAULT 0,
       next_vote_at BIGINT,
       vote_cooldown_minutes INTEGER NOT NULL DEFAULT 120,
@@ -42,7 +42,7 @@ async function initDb() {
   await pool.query(
     `
       INSERT INTO app_state (id, vote_url, is_running, next_vote_at, vote_cooldown_minutes, timer_regex, created_at, updated_at)
-      VALUES (1, '', 0, NULL, 120, '(\\d{1,2}:\\d{2}:\\d{2})', $1, $2)
+      VALUES (1, 'https://top-serveurs.net/gta/vote/dreamvrp', 0, NULL, 120, '(\\d{1,2}:\\d{2}:\\d{2})', $1, $2)
       ON CONFLICT (id) DO NOTHING
     `,
     [now, now]

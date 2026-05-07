@@ -45,10 +45,19 @@ app.post("/api/stop", async (_req, res) => {
 app.post("/api/opened", async (_req, res) => {
   const state = await getState();
   if (!state.next_vote_at) {
-    const nextVoteAt = Date.now() + state.vote_cooldown_minutes * 60 * 1000;
-    const updated = await setState({ next_vote_at: nextVoteAt });
-    await addHistory("state", "Premiere ouverture de l'URL de vote.");
-    return res.json(updated);
+    try {
+      const result = await syncTimerFromVotePage({ skipHistory: true });
+      await addHistory("state", "Premiere ouverture: timer synchronise depuis la page (#digitalCountdown).");
+      return res.json(result.state);
+    } catch (_error) {
+      const nextVoteAt = Date.now() + state.vote_cooldown_minutes * 60 * 1000;
+      const updated = await setState({ next_vote_at: nextVoteAt });
+      await addHistory(
+        "state",
+        "Premiere ouverture: sync impossible; fallback cooldown serveur (minutes)."
+      );
+      return res.json(updated);
+    }
   }
   res.json(state);
 });

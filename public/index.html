@@ -22,13 +22,17 @@
 
       <section class="glass panel">
         <label for="voteUrl">URL de vote</label>
-        <input id="voteUrl" type="url" placeholder="https://..." />
+        <input
+          id="voteUrl"
+          type="url"
+          placeholder="https://top-serveurs.net/gta/vote/dreamvrp"
+          value="https://top-serveurs.net/gta/vote/dreamvrp"
+        />
 
-        <label for="cooldown">Cooldown (minutes)</label>
-        <input id="cooldown" type="number" min="1" value="120" />
-
-        <label for="timerRegex">Regex du timer (groupe 1)</label>
-        <input id="timerRegex" type="text" value="(\\d{1,2}:\\d{2}:\\d{2})" />
+        <p class="hint">
+          Le delai est lu automatiquement sur la page dans <code>#digitalCountdown</code> (heures / minutes /
+          secondes).
+        </p>
 
         <div class="actions">
           <button id="saveBtn" class="btn">Sauvegarder</button>

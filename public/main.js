@@ -1,7 +1,5 @@
 const els = {
   voteUrl: document.querySelector("#voteUrl"),
-  cooldown: document.querySelector("#cooldown"),
-  timerRegex: document.querySelector("#timerRegex"),
   timer: document.querySelector("#timer"),
   history: document.querySelector("#history"),
   saveBtn: document.querySelector("#saveBtn"),
@@ -42,9 +40,8 @@ async function api(path, options = {}) {
 
 function renderState() {
   if (!state) return;
-  els.voteUrl.value = state.vote_url || "";
-  els.cooldown.value = state.vote_cooldown_minutes || 120;
-  els.timerRegex.value = state.timer_regex || "(\\d{1,2}:\\d{2}:\\d{2})";
+  els.voteUrl.value =
+    state.vote_url || "https://top-serveurs.net/gta/vote/dreamvrp";
 }
 
 function renderHistory(items) {
@@ -78,8 +75,6 @@ els.saveBtn.addEventListener("click", async () => {
     method: "POST",
     body: JSON.stringify({
       vote_url: els.voteUrl.value.trim(),
-      vote_cooldown_minutes: Number(els.cooldown.value),
-      timer_regex: els.timerRegex.value.trim(),
     }),
   });
   await refresh();

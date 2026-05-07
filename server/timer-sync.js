@@ -12,13 +12,22 @@ function parseHmsToMs(value) {
   return null;
 }
 
+function sliceAroundDigitalCountdown(html) {
+  const needle = /id\s*=\s*["']digitalCountdown["']/i;
+  const match = needle.exec(html);
+  if (!match || match.index === undefined) return html;
+  return html.slice(match.index, match.index + 4000);
+}
+
 function extractTimerFromDataUnits(html) {
+  const scoped = sliceAroundDigitalCountdown(html);
+
   const getUnit = (unit) => {
     const regex = new RegExp(
       `<span[^>]*data-unit=["']${unit}["'][^>]*>\\s*(\\d{1,2})\\s*<\\/span>`,
       "i"
     );
-    const match = html.match(regex);
+    const match = scoped.match(regex);
     return match ? Number(match[1]) : null;
   };
 
@@ -38,7 +47,8 @@ function extractTimerFromDataUnits(html) {
   return { ms, label };
 }
 
-async function syncTimerFromVotePage() {
+async function syncTimerFromVotePage(options = {}) {
+  const { skipHistory = false } = options;
   const state = await getState();
   if (!state.vote_url) throw new Error("Aucune URL de vote configuree.");
 
@@ -50,7 +60,12 @@ async function syncTimerFromVotePage() {
   if (unitTimer) {
     const nextVoteAt = Date.now() + unitTimer.ms;
     const updated = await setState({ next_vote_at: nextVoteAt });
-    await addHistory("sync", `Timer synchronise depuis l'URL: ${unitTimer.label}.`);
+    if (!skipHistory) {
+      await addHistory(
+        "sync",
+        `Timer synchronise depuis #digitalCountdown (page vote): ${unitTimer.label}.`
+      );
+    }
     return { state: updated, matchedTimer: unitTimer.label };
   }
 
@@ -65,10 +80,13 @@ async function syncTimerFromVotePage() {
 
   const nextVoteAt = Date.now() + ms;
   const updated = await setState({ next_vote_at: nextVoteAt });
-  await addHistory("sync", `Timer synchronise depuis l'URL: ${match[1]}.`);
+  if (!skipHistory) {
+    await addHistory("sync", `Timer synchronise depuis l'URL: ${match[1]}.`);
+  }
   return { state: updated, matchedTimer: match[1] };
 }
 
 module.exports = {
   syncTimerFromVotePage,
+  extractTimerFromDataUnits,
 };

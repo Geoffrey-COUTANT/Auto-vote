@@ -1,6 +1,7 @@
 const cron = require("node-cron");
 const { getState, setState, addHistory } = require("./db");
 const { notifyVoteReady } = require("./notifier");
+const { syncTimerFromVotePage } = require("./timer-sync");
 
 let notificationSentFor = null;
 
@@ -42,13 +43,22 @@ function startScheduler() {
 
 async function markVoteDone() {
   const state = await getState();
-  const nextVoteAt = computeNextVoteFromNow(state.vote_cooldown_minutes);
-  const updated = await setState({ next_vote_at: nextVoteAt });
-  await addHistory(
-    "vote",
-    `Vote confirme. Prochain timer dans ${updated.vote_cooldown_minutes} minutes.`
-  );
-  return updated;
+  try {
+    const result = await syncTimerFromVotePage({ skipHistory: true });
+    await addHistory(
+      "vote",
+      `Vote confirme. Prochain delai depuis la page (#digitalCountdown): ${result.matchedTimer}.`
+    );
+    return result.state;
+  } catch (_error) {
+    const nextVoteAt = computeNextVoteFromNow(state.vote_cooldown_minutes);
+    const updated = await setState({ next_vote_at: nextVoteAt });
+    await addHistory(
+      "vote",
+      `Vote confirme. Sync page impossible; fallback ${updated.vote_cooldown_minutes} min.`
+    );
+    return updated;
+  }
 }
 
 module.exports = {
