@@ -4,7 +4,6 @@ const express = require("express");
 const cors = require("cors");
 const { initDb, getState, setState, addHistory, getHistory } = require("./db");
 const { startScheduler, markVoteDone } = require("./scheduler");
-const { syncTimerFromVotePage } = require("./timer-sync");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -45,19 +44,13 @@ app.post("/api/stop", async (_req, res) => {
 app.post("/api/opened", async (_req, res) => {
   const state = await getState();
   if (!state.next_vote_at) {
-    try {
-      const result = await syncTimerFromVotePage({ skipHistory: true });
-      await addHistory("state", "Premiere ouverture: timer synchronise depuis la page (#digitalCountdown).");
-      return res.json(result.state);
-    } catch (_error) {
-      const nextVoteAt = Date.now() + state.vote_cooldown_minutes * 60 * 1000;
-      const updated = await setState({ next_vote_at: nextVoteAt });
-      await addHistory(
-        "state",
-        "Premiere ouverture: sync impossible; fallback cooldown serveur (minutes)."
-      );
-      return res.json(updated);
-    }
+    const nextVoteAt = Date.now() + state.vote_cooldown_minutes * 60 * 1000;
+    const updated = await setState({ next_vote_at: nextVoteAt });
+    await addHistory(
+      "state",
+      "Premiere ouverture: timer demarre avec le delai serveur."
+    );
+    return res.json(updated);
   }
   res.json(state);
 });
@@ -67,14 +60,7 @@ app.post("/api/voted", async (_req, res) => {
   res.json(updated);
 });
 
-app.post("/api/sync-timer", async (_req, res) => {
-  try {
-    const result = await syncTimerFromVotePage();
-    res.json(result);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
+
 
 /** Délais lus par l'utilisateur sur la page ouverte (contourne blocage fetch serveur ↔ Top Serveurs). */
 app.post("/api/timer-manual", async (req, res) => {

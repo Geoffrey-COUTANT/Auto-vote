@@ -4,7 +4,7 @@ const { notifyVoteReady } = require("./server/notifier");
 (async () => {
   console.log("Envoi de la notification test Discord...");
   try {
-    const result = await notifyVoteReady("http://ton-site-de-vote.com/test");
+    const result = await notifyVoteReady("https://auto-vote-723r.onrender.com/");
     if (result.sent) {
       console.log("✅ Notification test envoyée avec succès sur Discord !");
     } else {

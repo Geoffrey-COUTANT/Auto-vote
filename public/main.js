@@ -4,7 +4,6 @@ const els = {
   history: document.querySelector("#history"),
   saveBtn: document.querySelector("#saveBtn"),
   openBtn: document.querySelector("#openBtn"),
-  syncBtn: document.querySelector("#syncBtn"),
   manualH: document.querySelector("#manualH"),
   manualM: document.querySelector("#manualM"),
   manualS: document.querySelector("#manualS"),
@@ -126,14 +125,6 @@ els.votedBtn.addEventListener("click", async () => {
   await refresh();
 });
 
-els.syncBtn.addEventListener("click", async () => {
-  try {
-    await api("/api/sync-timer", { method: "POST" });
-    await refresh();
-  } catch (error) {
-    alert(error.message);
-  }
-});
 
 els.manualApplyBtn.addEventListener("click", async () => {
   try {
