@@ -5,12 +5,28 @@ const els = {
   saveBtn: document.querySelector("#saveBtn"),
   openBtn: document.querySelector("#openBtn"),
   syncBtn: document.querySelector("#syncBtn"),
+  manualH: document.querySelector("#manualH"),
+  manualM: document.querySelector("#manualM"),
+  manualS: document.querySelector("#manualS"),
+  manualApplyBtn: document.querySelector("#manualApplyBtn"),
   startBtn: document.querySelector("#startBtn"),
   stopBtn: document.querySelector("#stopBtn"),
   votedBtn: document.querySelector("#votedBtn"),
 };
 
 let state = null;
+
+function apiBaseUrl() {
+  const meta = document.querySelector('meta[name="vote-loop-api-base"]');
+  return (meta?.getAttribute("content") || "").trim().replace(/\/$/, "");
+}
+
+function apiUrl(path) {
+  const pathOnly = path.startsWith("/") ? path : `/${path}`;
+  const base = apiBaseUrl();
+  if (!base) return pathOnly;
+  return `${base}${pathOnly}`;
+}
 
 function formatMs(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -21,7 +37,7 @@ function formatMs(ms) {
 }
 
 async function api(path, options = {}) {
-  const res = await fetch(path, {
+  const res = await fetch(apiUrl(path), {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
@@ -44,11 +60,18 @@ function renderState() {
     state.vote_url || "https://top-serveurs.net/gta/vote/dreamvrp";
 }
 
+/** BIGINT Postgres peut arriver en string dans le JSON ; new Date("1712345678901") donne Invalid Date. */
+function formatHistoryDate(msOrRaw) {
+  const ms = typeof msOrRaw === "bigint" ? Number(msOrRaw) : Number(msOrRaw);
+  if (!Number.isFinite(ms)) return "?";
+  return new Date(ms).toLocaleString("fr-FR");
+}
+
 function renderHistory(items) {
   els.history.innerHTML = "";
   for (const row of items) {
     const li = document.createElement("li");
-    const date = new Date(row.created_at).toLocaleString("fr-FR");
+    const date = formatHistoryDate(row.created_at);
     li.textContent = `[${date}] ${row.message}`;
     els.history.appendChild(li);
   }
@@ -112,8 +135,24 @@ els.syncBtn.addEventListener("click", async () => {
   }
 });
 
+els.manualApplyBtn.addEventListener("click", async () => {
+  try {
+    state = await api("/api/timer-manual", {
+      method: "POST",
+      body: JSON.stringify({
+        hours: Number(els.manualH.value),
+        minutes: Number(els.manualM.value),
+        seconds: Number(els.manualS.value),
+      }),
+    });
+    await refresh();
+  } catch (error) {
+    alert(error.message);
+  }
+});
+
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js").catch(() => {});
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
 }
 
 refresh().catch((error) => {

@@ -1,11 +1,11 @@
-const CACHE_NAME = "vote-loop-v1";
+const CACHE_NAME = "vote-loop-v2";
 const ASSETS = [
-  "/",
-  "/index.html",
-  "/styles.css",
-  "/main.js",
-  "/manifest.webmanifest",
-  "/icon.svg",
+  "./",
+  "./index.html",
+  "./styles.css",
+  "./main.js",
+  "./manifest.webmanifest",
+  "./icon.svg",
 ];
 
 self.addEventListener("install", (event) => {

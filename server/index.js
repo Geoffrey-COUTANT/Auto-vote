@@ -76,6 +76,42 @@ app.post("/api/sync-timer", async (_req, res) => {
   }
 });
 
+/** Délais lus par l'utilisateur sur la page ouverte (contourne blocage fetch serveur ↔ Top Serveurs). */
+app.post("/api/timer-manual", async (req, res) => {
+  let { hours, minutes, seconds } = req.body;
+  hours = Number(hours);
+  minutes = Number(minutes);
+  seconds = Number(seconds);
+  if (![hours, minutes, seconds].every((n) => Number.isFinite(n))) {
+    return res.status(400).json({
+      error: "Heures, minutes et secondes doivent etre des nombres.",
+    });
+  }
+  if (
+    hours < 0 ||
+    hours > 168 ||
+    minutes < 0 ||
+    minutes > 59 ||
+    seconds < 0 ||
+    seconds > 59
+  ) {
+    return res.status(400).json({
+      error: "Plage invalide : heures 0–168, minutes et secondes 0–59.",
+    });
+  }
+  const ms = ((hours * 60 + minutes) * 60 + seconds) * 1000;
+  if (ms <= 0) {
+    return res.status(400).json({ error: "Le delai doit etre strictement positif." });
+  }
+  const label = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+    2,
+    "0"
+  )}:${String(seconds).padStart(2, "0")}`;
+  const updated = await setState({ next_vote_at: Date.now() + ms });
+  await addHistory("sync", `Timer saisi depuis la page (manuel): ${label}.`);
+  res.json(updated);
+});
+
 app.get("/api/history", async (req, res) => {
   const limit = Number(req.query.limit || 30);
   res.json(await getHistory(limit));
