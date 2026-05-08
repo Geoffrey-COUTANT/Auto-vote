@@ -3,6 +3,9 @@ const { setState, getState, addHistory } = require("./db");
 /** Utilise si la base a encore une URL vide (ex. deploy sans « Sauvegarder »). */
 const DEFAULT_VOTE_URL = "https://top-serveurs.net/gta/vote/dreamvrp";
 
+const DIGITAL_COUNTDOWN_WINDOW = 16_000;
+const COOLDOWN_CARD_WINDOW = 28_000;
+
 function votePageFetchHeaders() {
   return {
     "User-Agent":
@@ -24,22 +27,33 @@ function parseHmsToMs(value) {
   return null;
 }
 
+function sliceFromMatchIndex(html, index, length) {
+  if (index === undefined || index < 0) return null;
+  return html.slice(index, index + length);
+}
+
 function sliceAroundDigitalCountdown(html) {
   const needle = /id\s*=\s*["']digitalCountdown["']/i;
   const match = needle.exec(html);
-  if (!match || match.index === undefined) return html;
-  return html.slice(match.index, match.index + 4000);
+  return sliceFromMatchIndex(html, match?.index, DIGITAL_COUNTDOWN_WINDOW);
 }
 
-function extractTimerFromDataUnits(html) {
-  const scoped = sliceAroundDigitalCountdown(html);
+/** Bloc « Veuillez patienter » + compteur (structure Top Serveurs). */
+function sliceAroundCooldownCard(html) {
+  const match = /\bclass\s*=\s*["'][^"']*\bcooldown-card\b[^"']*["']/i.exec(html);
+  return sliceFromMatchIndex(html, match?.index, COOLDOWN_CARD_WINDOW);
+}
+
+/** Extrait h/m/s depuis les <span data-unit="hours|minutes|seconds"> dans un morceau HTML. */
+function extractHmsFromDataUnitSpans(scopedHtml) {
+  if (!scopedHtml) return null;
 
   const getUnit = (unit) => {
     const regex = new RegExp(
-      `<span[^>]*data-unit=["']${unit}["'][^>]*>\\s*(\\d{1,2})\\s*<\\/span>`,
+      `<span\\b[^>]*\\bdata-unit\\s*=\\s*["']${unit}["'][^>]*>\\s*(\\d{1,2})\\s*<\\/span>`,
       "i"
     );
-    const match = scoped.match(regex);
+    const match = scopedHtml.match(regex);
     return match ? Number(match[1]) : null;
   };
 
@@ -57,6 +71,81 @@ function extractTimerFromDataUnits(html) {
   ).padStart(2, "0")}`;
 
   return { ms, label };
+}
+
+function extractFromDigitalCountdownSpans(html) {
+  const windows = [];
+  const byId = sliceAroundDigitalCountdown(html);
+  if (byId) windows.push(byId);
+  const card = sliceAroundCooldownCard(html);
+  if (card) windows.push(card);
+  windows.push(html);
+
+  const seen = new Set();
+  for (const chunk of windows) {
+    if (!chunk || seen.has(chunk)) continue;
+    seen.add(chunk);
+    const found = extractHmsFromDataUnitSpans(chunk);
+    if (found && found.ms > 0) return found;
+  }
+  return null;
+}
+
+/**
+ * Texte du type « 52m 30s », « 1h 5m », « 0h 0m 30s » (bloc #voteTimer / .cooldown-time).
+ */
+function parseCompactDurationText(raw) {
+  const text = String(raw)
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return null;
+
+  let hours = 0;
+  let minutes = 0;
+  let seconds = 0;
+  const hM = text.match(/(\d+)\s*h\b/i);
+  const mM = text.match(/(\d+)\s*m\b/i);
+  const sM = text.match(/(\d+)\s*s\b/i);
+  if (hM) hours = Number(hM[1]);
+  if (mM) minutes = Number(mM[1]);
+  if (sM) seconds = Number(sM[1]);
+  if (!hM && !mM && !sM) return null;
+
+  const ms = ((hours * 60 + minutes) * 60 + seconds) * 1000;
+  if (!Number.isFinite(ms) || ms <= 0) return null;
+
+  const label = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(
+    seconds
+  ).padStart(2, "0")}`;
+  return { ms, label };
+}
+
+function extractFromCooldownTimeSpan(html) {
+  const re = /<span[^>]*\bcooldown-time\b[^>]*>([\s\S]*?)<\/span>/i;
+  const match = html.match(re);
+  if (!match) return null;
+  return parseCompactDurationText(match[1]);
+}
+
+function extractFromVoteTimerBlock(html) {
+  const re = /id\s*=\s*["']voteTimer["'][^>]*>([\s\S]*?)<\/strong>/i;
+  const match = html.match(re);
+  if (!match) return null;
+  return parseCompactDurationText(match[1]);
+}
+
+function extractTimerFromDataUnits(html) {
+  const fromSpans = extractFromDigitalCountdownSpans(html);
+  if (fromSpans) return { ...fromSpans, source: "#digitalCountdown" };
+
+  const fromCool = extractFromCooldownTimeSpan(html);
+  if (fromCool) return { ...fromCool, source: ".cooldown-time" };
+
+  const fromVote = extractFromVoteTimerBlock(html);
+  if (fromVote) return { ...fromVote, source: "#voteTimer" };
+
+  return null;
 }
 
 async function syncTimerFromVotePage(options = {}) {
@@ -80,7 +169,7 @@ async function syncTimerFromVotePage(options = {}) {
     if (!skipHistory) {
       await addHistory(
         "sync",
-        `Timer synchronise depuis #digitalCountdown (page vote): ${unitTimer.label}.`
+        `Timer synchronise depuis la page (${unitTimer.source}): ${unitTimer.label}.`
       );
     }
     return { state: updated, matchedTimer: unitTimer.label };
@@ -96,11 +185,14 @@ async function syncTimerFromVotePage(options = {}) {
   }
   const match = html.match(regex);
   if (!match || !match[1]) {
-    const hasBlock = /digitalCountdown/i.test(html);
+    const hasCooldownUi =
+      /\bcooldown-card\b/i.test(html) ||
+      /id\s*=\s*["']digitalCountdown["']/i.test(html) ||
+      /\bcooldown-time\b/i.test(html);
     throw new Error(
-      hasBlock
-        ? "Compteur #digitalCountdown present mais valeurs illisibles (HTML change?). Contact / mise a jour du parser."
-        : "Timer introuvable : la page renvoyee ne contient pas #digitalCountdown (anti-bot, blocage IP hebergeur, ou HTML different). Essaie depuis ton PC ou clique « Sauvegarder » avec la bonne URL."
+      hasCooldownUi
+        ? "Compteur cooldown detecte dans le HTML mais valeurs illisibles (structure changee ?). Utilise la saisie manuelle ou mets a jour le parser."
+        : "Timer introuvable : la page renvoyee ne contient pas le bloc cooldown (HTML different, anti-bot, ou IP hebergeur). Essaie la saisie manuelle."
     );
   }
 
