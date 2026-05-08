@@ -1,10 +1,22 @@
-async function sendDiscord(webhookUrl, content) {
+async function sendDiscord(webhookUrl, content, pingUserId, voteUrl) {
   if (!webhookUrl) return false;
+
+  const payload = {
+    content: pingUserId ? `<@${pingUserId}> Timer fini !` : content,
+    embeds: [
+      {
+        title: "C'est l'heure de voter !",
+        description: "Clique sur ce message pour accéder à la page de vote.",
+        url: voteUrl,
+        color: 3447003
+      }
+    ]
+  };
 
   const res = await fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
@@ -40,7 +52,7 @@ async function notifyVoteReady(voteUrl) {
 
   const tasks = [];
   if (process.env.DISCORD_WEBHOOK_URL) {
-    tasks.push(sendDiscord(process.env.DISCORD_WEBHOOK_URL, message));
+    tasks.push(sendDiscord(process.env.DISCORD_WEBHOOK_URL, message, process.env.DISCORD_PING_USER_ID, voteUrl));
   }
   if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
     tasks.push(
